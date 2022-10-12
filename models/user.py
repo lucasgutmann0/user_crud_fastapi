@@ -10,3 +10,7 @@ class User(BaseModel):
     age:int
     phone_number: int
     password: str
+    
+class UserLogin(BaseModel):
+    email: str
+    password: str

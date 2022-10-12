@@ -1,7 +1,8 @@
+from itertools import count
 from fastapi import APIRouter, Response, status
 from config.db import connection
 from schemas.user import userEntity, usersEntity
-from models.user import User
+from models.user import User, UserLogin
 from passlib.hash import sha256_crypt
 from bson import ObjectId
 
@@ -29,12 +30,37 @@ async def create_user(user: User, response: Response):
         id = user_db.insert_one(new_user).inserted_id
         # get the user recently created
         user = user_db.find_one({"_id": id})
+        # assign message to variable
+        created_user = userEntity(user)
+        # Add message to the json that is about to be returned
+        created_user["message"] = "User was created succesfully created"
         # return the user data and the message
-        return userEntity(user)
+        return created_user
     except:
-        response.status_code=status.HTTP_400_BAD_REQUEST
+        response.status_code = status.HTTP_400_BAD_REQUEST
         return {"message": "Couldn't create the User"}
-        
+
+# login to app
+@user.post("/login/")
+async def get_user(request: UserLogin, response: Response):
+    # create new dict with data of the request
+    login_data = dict(request)
+    # save requested user on variable
+    req_email = user_db.find_one({"email": login_data["email"]})
+    # TRY to find a user with that email
+    if req_email != None:
+        # validate if password is valid
+        if sha256_crypt.verify(login_data["password"], userEntity(req_email)["password"]):
+            response.status_code = status.HTTP_200_OK
+            return userEntity(req_email)
+        # else return 403 forbidden
+        else:
+            response.status_code = status.HTTP_403_FORBIDDEN
+            return {"message": "Wrong Password"}
+    # else not found and message
+    else:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"message": "Couldn't find a User with that Email"}
 
 
 # find a user
