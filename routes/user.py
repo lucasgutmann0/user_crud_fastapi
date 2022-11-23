@@ -77,12 +77,12 @@ async def get_user(id: str):
 
 # update user data
 @user.put("/users/{id}")
-async def update_user(id: str, response: Response):
+async def update_user(id: str, user: User ,response: Response):
     try:
-        user_db.find_one_and_delete({"_id": ObjectId(id)})
-        return {"message": "User has been deleted succesfully"}
+        user_db.find_one_and_update({"_id": ObjectId(id)}, {"$set": dict(user)})
+        return {"message": "User has been updated succesfully"}
     except:
-        return {"message": "Hello world"}
+        return {"message": "Couldn't update the requested user"}
 
 
 # delete user
@@ -93,4 +93,4 @@ async def delete_user(id: str, response: Response):
         return {"message": "User has been deleted succesfully"}
     except:
         response.status_code = status.HTTP_404_NOT_FOUND
-        return {"message": "The user doesn't exists or have alredy been deleted"}
+        return {"message": "The user doesn't exists or has alredy been deleted"}
