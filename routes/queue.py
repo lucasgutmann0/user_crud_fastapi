@@ -49,18 +49,6 @@ async def get_all_queue_names(response: Response):
             "message": "These are the availables queues"
         }
     return queues
-    
-# get all queue names
-@queue.get("/queues/names", status_code=status.HTTP_200_OK, tags=["Queue"])
-async def get_all_queue_names():
-    queue_names = []
-    queues = queue_db.find()
-    for i in queues:
-        queue_names.append(i["name"])
-    return {
-        "names": queue_names,
-        "message": "These are the availables queues"
-    }
 
 # find a queue
 @queue.get("/queues/{name}", tags=["Queue"])
@@ -72,6 +60,43 @@ async def get_one_queue_by_name(name: str):
         return queueEntity(queue)
     except:
         return {"message": "Couldn't find requested queue"}
+
+# add element to a queue
+@queue.put("/queues/{name}/", tags=["Queue"])
+async def add_element_to_queue(name: str, position: int, value: float):
+    # gettin queue based on the name
+    queue = queue_db.find_one({"name": name})
+    if not queue == None:
+        parsed_queue = queueEntity(queue)
+        if position < 0:
+            parsed_queue["data"].insert(position, value)
+        elif position < (len(parsed_queue["data"]) - 1):
+            parsed_queue["data"].insert(position, value)
+        else:
+            parsed_queue["data"].append(value) 
+        
+        parsed_queue_modified = parsed_queue
+        del parsed_queue_modified["id"]
+        queue_db.find_one_and_update({"name": name}, {"$set": parsed_queue_modified})
+        return parsed_queue
+    return {"message": "Couldn't find requested queue"}
+
+# remove element from a queue
+@queue.delete("/queues/{name}/", tags=["Queue"])
+async def delete_element_to_queue(name: str, position: int):
+    # gettin queue based on the name
+    queue = queue_db.find_one({"name": name})
+    if not queue == None:
+        parsed_queue = queueEntity(queue)
+        try:  
+            parsed_queue["data"].pop(position)
+            parsed_queue_modified = parsed_queue
+            del parsed_queue_modified["id"]
+            queue_db.find_one_and_update({"name": name}, {"$set": parsed_queue_modified})
+        except:
+            return {"message": "Couldn't delete element from the requested queue"}
+        return parsed_queue
+    return {"message": "Couldn't find requested queue"}
 
 # regist a queue
 @queue.post("/queues", status_code=status.HTTP_201_CREATED, tags=["Queue"])

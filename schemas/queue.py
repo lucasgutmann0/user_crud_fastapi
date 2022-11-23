@@ -3,7 +3,7 @@ def queueEntity(item) -> dict:
     return {
         "id": str(item["_id"]),
         "name": str(item["name"]),
-        "info": list(item["info"])
+        "data": list(item["data"])
     }
     
 def queuesEntity(entity) -> list:
